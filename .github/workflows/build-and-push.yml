@@ -24,7 +24,7 @@ jobs:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
-        echo '##[section]Building Docker image'
-        docker build -t your-docker-hub-username/backend-image:${{ github.run_number }} .
+        echo 'Building Docker image'
+        docker build -t enanotg/frontend-image:${{ github.run_number }} .
         docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-        docker push your-docker-hub-username/backend-image:${{ github.run_number }}
+        docker push enanotg/frontend-image:${{ github.run_number }}
