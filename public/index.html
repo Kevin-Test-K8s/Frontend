@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple App</title>
+</head>
+<body>
+  <h1>Simple App</h1>
+  <form id="userForm">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name"><br><br>
+
+    <label for="age">Age:</label>
+    <input type="number" id="age" name="age"><br><br>
+
+    <label for="favoriteColor">Favorite Color:</label>
+    <input type="text" id="favoriteColor" name="favoriteColor"><br><br>
+
+    <input type="submit" value="Submit">
+  </form>
+
+  <div id="message"></div>
+
+  <script>
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const age = document.getElementById('age').value;
+      const favoriteColor = document.getElementById('favoriteColor').value;
+
+      const response = await fetch('http://localhost:3000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, age, favoriteColor }),
+      });
+
+      const data = await response.json();
+
+      const message = `User created with ID: ${data.user._id}. There are ${data.sameAgeCount} people with the same age and ${data.sameColorCount} people with the same favorite color.`;
+
+      document.getElementById('message').innerText = message;
+    });
+  </script>
+</body>
+</html>
