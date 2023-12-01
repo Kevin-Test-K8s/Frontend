@@ -1,0 +1,30 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main  # Define the branch to trigger the workflow
+  pull_request:
+    branches:
+      - main  # Trigger for pull requests to main branch
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest  # Choose an appropriate runner
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Build and Push Docker Image
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        echo '##[section]Building Docker image'
+        docker build -t your-docker-hub-username/backend-image:${{ github.run_number }} .
+        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+        docker push your-docker-hub-username/backend-image:${{ github.run_number }}
