@@ -2,19 +2,13 @@ name: Deploy to AKS
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Create and publish a Docker image"]
+    types:
+      - completed
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-        - name: Verify Workflow Triggered
-          run: echo "Deployment workflow has started"
-          
   Deploy-to-AKS:
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
