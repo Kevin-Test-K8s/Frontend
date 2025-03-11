@@ -31,7 +31,7 @@ jobs:
 
       - name: Update Image in Deployment
         run: |
-          kubectl set image deployment/frontend frontend=ghcr.io/Kevin-Test-K8s/frontend:main -n default
+          kubectl set image deployment/frontend frontend=ghcr.io/kevin-test-k8s/frontend:main -n default
           kubectl rollout status deployment/frontend -n default
 
       - name: Verify Deployment

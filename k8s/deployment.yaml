@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/Kevin-Test-K8s/frontend:main
+          image: ghcr.io/kevin-test-k8s/frontend:main
           ports:
             - containerPort: 80
       imagePullSecrets:
