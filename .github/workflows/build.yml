@@ -13,12 +13,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       attestations: write
       id-token: write
 
-    steps:    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Load version from VERSION file
+        run: ./version.sh
+
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
@@ -31,4 +37,19 @@ jobs:
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           push: true
-          tags: ${{ env.REGISTRY }}/kevin-test-k8s/frontend:main
+          tags: ${{ env.REGISTRY }}/kevin-test-k8s/frontend:${{ env.VERSION }}
+
+      - name: Commit and push updated version
+        run: |
+            # Read and bump version (minor)
+            CURRENT=$(cat VERSION)
+            IFS='.' read -r MAJOR MINOR <<< "$CURRENT"
+            NEXT="$MAJOR.$((MINOR + 1))"
+            echo "$NEXT" > VERSION
+        
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add VERSION
+            git commit -m "Bump version to $NEXT"
+            git push https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+        
