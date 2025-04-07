@@ -1,18 +1,43 @@
-name: Deploy to AKS
+name: Deploy Frontend to AKS
 
 on:
   workflow_dispatch:
-  # workflow_run:
-  #   workflows: ["Create and publish a Docker image"]
-  #   types:
-  #     - completed
+    inputs:
+      version:
+        description: 'Select Image version to deploy (e.g. 1.0.5):'
+        required: false
 
 jobs:
   Deploy-to-AKS:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repo
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Set image version
+        id: set-version
+        run: |
+          if [ -z "${{ github.event.inputs.version }}" ]; then
+            echo "No version provided, checking latest..."
+            VERSION=$(gh api -H "Accept: application/vnd.github.v3+json" \
+              /orgs/Kevin-Test-K8s/packages/container/frontend/versions \
+              | jq -r '.[].metadata.container.tags[]' \
+              | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+              | sort -V | tail -n 1)
+
+            if [ -z "$VERSION" ]; then
+              echo "No valid version found. Falling back to 1.0.0"
+              VERSION="1.0.0"
+            fi
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+
+          echo "Using version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Log in to Azure
         uses: azure/login@v1
@@ -21,17 +46,27 @@ jobs:
 
       - name: Set up kubectl
         run: |
-          az aks get-credentials --resource-group K8s --name kevintestcluster1
+          az aks get-credentials --resource-group k8s-terraform --name k8s-terraform-cluster
           kubectl get nodes
+
+      - name: Create imagePullSecret for GitHub Container Registry
+        run: |
+          kubectl get secret ghcr-secret -n default || \
+          kubectl create secret docker-registry ghcr-secret \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GH_TOKEN }} \
+            --docker-email=no-reply@github.com \
+            -n default
+
+      - name: Render Kubernetes Manifest with selected version
+        run: |
+          sed "s|ghcr.io/kevin-test-k8s/frontend:.*|ghcr.io/kevin-test-k8s/frontend:${VERSION}|" \
+            k8s/deployment.yaml > k8s/deployment.rendered.yaml
 
       - name: Apply Kubernetes Deployment
         run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl rollout status deployment/frontend -n default
-
-      - name: Update Image in Deployment
-        run: |
-          kubectl set image deployment/frontend frontend=ghcr.io/kevin-test-k8s/frontend:main -n default
+          kubectl apply -f k8s/deployment.rendered.yaml
           kubectl rollout status deployment/frontend -n default
 
       - name: Verify Deployment
